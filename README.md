@@ -1,6 +1,6 @@
-# ⏳ AfterBefore
+# ⏳ JustPonto
 
-O **AfterBefore** é uma plataforma corporativa de autoatendimento voltada para a gestão e justificativa de frequência de colaboradores. O sistema centraliza, digitaliza e audita solicitações de correção de ponto, abono de faltas e validação de atestados médicos, automatizando o fluxo de aprovação entre o funcionário, a gestão direta e o Departamento Pessoal.
+O **JustPonto** é uma plataforma corporativa de autoatendimento voltada para a gestão e justificativa de frequência de colaboradores. O sistema centraliza, digitaliza e audita solicitações de correção de ponto, abono de faltas e validação de atestados médicos, automatizando o fluxo de aprovação entre o funcionário, a gestão direta e o Departamento Pessoal.
 
 ## Integrantes
 - Vinicius
@@ -62,17 +62,17 @@ npm install
 npm start
 ```
 
-3. Acesse a aplicação no navegador: `http://localhost:3000` (ou `http://localhost:3000/public/index.html` para o frontend estático de demo).
+3. Acesse a aplicação no navegador: `http://localhost:3000` (frontend estático em `public/index.html`).
 
 ## Estrutura do repositório
 - `server.js` - backend em Express
 - `db.js` - inicializa banco SQLite e esquema
 - `utils/crypto.js` - funções de criptografia de arquivos (AES-256)
-- `public/index.html` - frontend estático demo
+- `public/index.html` - frontend estático
 - `uploads/` - diretório de arquivos criptografados (configurável via `UPLOAD_DIR`)
 
 ## Observações de implementação
-- Endpoint de demonstração `/auth/login` cria/retorna usuários por email (em demo). Para produção, integrar SSO corporativo/OIDC/SAML conforme política da organização.
+- Endpoint `/auth/login` cria/retorna usuários por email para propósito de desenvolvimento/testes. Para produção, integrar SSO corporativo/OIDC/SAML conforme política da organização.
 - Acesso a atestados: somente usuários com perfil `RH` podem baixar o PDF original via endpoint `/rh/atestados/:id/download`. Gestores visualizam informações mascaradas.
 - Trilha de auditoria é tratada como append-only pela aplicação (não há endpoints para exclusão/alteração).
 - Exportação: `/export?format=csv|json` para dados aprovados.
