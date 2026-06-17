@@ -1,0 +1,379 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AfterBefore - Demo</title>
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--accent:#1f6feb;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:0}
+    header{background:linear-gradient(90deg,#0f172a 0%, #1f2937 100%);color:#fff;padding:14px 20px}
+    .container{max-width:1000px;margin:20px auto;padding:16px}
+    .card{background:var(--card);padding:16px;border-radius:8px;box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:16px}
+    .grid{display:flex;gap:16px}
+    .col{flex:1}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+    input,select,textarea,button{font-size:14px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:6px}
+    textarea{min-height:100px}
+    button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+    nav{display:flex;gap:8px}
+    .navbtn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.12);padding:8px 10px;border-radius:6px;cursor:pointer}
+    /* tabs dentro de cards devem ter contraste escuro */
+    .card .navbtn{background:transparent;color:#111;border:1px solid #e6e9ef;padding:6px 8px}
+    .hidden{display:none}
+    .times-list{display:flex;gap:8px;flex-wrap:wrap}
+    .times-list input{width:auto}
+    .error{color:#b91c1c;margin-top:8px}
+    .success{color:#065f46;margin-top:8px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <strong style="font-size:22px">AfterBefore</strong>
+        <div style="font-size:12px;opacity:.85">Gestão de Justificativas de Ponto</div>
+      </div>
+      <div id="nav" style="display:flex;gap:8px;align-items:center"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="loginSection" class="card">
+      <h2>Entrar (demo)</h2>
+      <label for="email">E-mail corporativo</label>
+      <input id="email" placeholder="email@empresa.com" />
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button id="btnLogin">Entrar</button>
+        <button id="btnShowRegister" class="" type="button">Criar/Editar Perfil</button>
+      </div>
+      <div id="loginError" class="error" role="alert"></div>
+    </section>
+
+    <section id="profileSection" class="card hidden">
+      <h2>Perfil / Cadastro</h2>
+      <label>Nome</label>
+      <input id="perfil_nome" />
+      <label>E-mail</label>
+      <input id="perfil_email" />
+      <label>Data de Nascimento</label>
+      <input id="perfil_nascimento" type="date" />
+      <label>Gênero/Sexo</label>
+      <select id="perfil_genero">
+        <option value="MASCULINO">Masculino</option>
+        <option value="FEMININO">Feminino</option>
+        <option value="N_PREFIRO">Prefiro não dizer</option>
+      </select>
+      <label>CPF</label>
+      <input id="perfil_cpf" />
+      <label>Perfil</label>
+      <select id="perfil_tipo">
+        <option value="FUNCIONARIO">Funcionário</option>
+        <option value="GESTOR">Chefe</option>
+        <option value="RH">RH</option>
+      </select>
+      <div style="margin-top:10px">
+        <button id="btnSaveProfile">Salvar Perfil</button>
+        <button id="btnCancelProfile" type="button">Cancelar</button>
+      </div>
+      <div id="profileMsg" class="success"></div>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div class="grid">
+        <div class="col card">
+          <h3>Nova Solicitação</h3>
+          <label>Data do Evento</label>
+          <input id="data_evento" type="date" />
+
+          <label>Tipo de Ocorrência</label>
+          <select id="tipo">
+            <option value="ESQUECIMENTO">Esquecimento</option>
+            <option value="PROBLEMA_TECNICO">Problema Técnico</option>
+            <option value="AUSENCIA_PLANEJADA">Ausência Planejada</option>
+            <option value="ATESTADO_MEDICO">Atestado Médico</option>
+          </select>
+
+          <label>Horários (adicione quantos precisar)</label>
+          <div class="times-list" id="timesList">
+            <input class="time-entry" type="time" />
+            <input class="time-entry" type="time" />
+          </div>
+          <div style="margin-top:6px"><button id="btnAddTime" type="button">Adicionar Horário</button></div>
+
+          <label>Descrição (detalhe seu pedido)</label>
+          <textarea id="descricao" placeholder="Explique o motivo detalhadamente..."></textarea>
+
+          <div id="atestadoFields" class="hidden">
+            <label>Data Início</label>
+            <input id="data_inicio" type="date" />
+            <label>Data Fim</label>
+            <input id="data_fim" type="date" />
+            <label>Dias Afastamento</label>
+            <input id="dias_afastamento" type="number" />
+            <label>Arquivo (pdf/png/jpg)</label>
+            <input id="file" type="file" />
+          </div>
+
+          <div style="margin-top:10px">
+            <button id="btnCreate">Criar Solicitação</button>
+            <div id="createMsg" class="error"></div>
+          </div>
+        </div>
+
+        <div class="col card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3 id="solicitacoes_title">Solicitações</h3>
+            <div>
+              <button id="tabMine" class="navbtn" type="button">Minhas Solicitações</button>
+              <button id="tabTeam" class="navbtn" type="button">Solicitações da Equipe</button>
+            </div>
+          </div>
+          <div id="lista_mine"></div>
+          <div id="lista_team" class="hidden"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let token = null;
+    let currentUser = null;
+    const API_BASE = (location.protocol === 'file:') ? 'http://localhost:3000' : '';
+
+    function show(section){
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('profileSection').classList.add('hidden');
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById(section).classList.remove('hidden');
+      renderNav();
+      if (section === 'dashboard') loadSolicitacoes();
+    }
+
+    function renderNav(){
+      const nav = document.getElementById('nav'); nav.innerHTML='';
+      if (!currentUser){
+        const btn = document.createElement('button'); btn.textContent='Perfil'; btn.className='navbtn'; btn.onclick=()=> show('profileSection'); nav.appendChild(btn);
+        return;
+      }
+      const info = document.createElement('div'); info.style.color='#fff'; info.style.marginRight='8px'; info.textContent = currentUser.email + ' ('+currentUser.perfil+')';
+      nav.appendChild(info);
+      const btnDash = document.createElement('button'); btnDash.textContent='Dashboard'; btnDash.className='navbtn'; btnDash.onclick=()=> show('dashboard'); nav.appendChild(btnDash);
+      const btnProfile = document.createElement('button'); btnProfile.textContent='Perfil'; btnProfile.className='navbtn'; btnProfile.onclick=()=> show('profileSection'); nav.appendChild(btnProfile);
+      const btnLogout = document.createElement('button'); btnLogout.textContent='Sair'; btnLogout.className='navbtn'; btnLogout.onclick=logout; nav.appendChild(btnLogout);
+    }
+
+    async function api(path, opts={}){
+      opts.headers = opts.headers || {};
+      if (token) opts.headers['Authorization'] = 'Bearer '+token;
+      const url = API_BASE + path;
+      try{
+        const res = await fetch(url, opts);
+        if (res.status === 401){ logout(); throw new Error('Não autorizado'); }
+        return res;
+      }catch(ex){
+        console.error('API request failed', url, ex);
+        throw ex;
+      }
+    }
+
+    document.getElementById('btnLogin').onclick = async () => {
+      const email = document.getElementById('email').value.trim();
+      const err = document.getElementById('loginError'); err.textContent='';
+      if (!email){ err.textContent = 'Por favor informe seu e-mail corporativo.'; return; }
+      try{
+        const res = await fetch(API_BASE + '/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+        const data = await res.json();
+        if (res.ok && data.token){ token = data.token; currentUser = data.user; await loadProfile(); show('dashboard'); }
+        else{ err.textContent = data.error || 'Erro ao logar'; }
+      }catch(ex){ err.textContent = ex.message }
+    };
+
+    document.getElementById('btnShowRegister').onclick = ()=>{
+      if (!token) {
+        // reset form for new registration
+        document.getElementById('perfil_nome').value = '';
+        document.getElementById('perfil_email').value = '';
+        document.getElementById('perfil_nascimento').value = '';
+        document.getElementById('perfil_cpf').value = '';
+        document.getElementById('perfil_tipo').value = 'FUNCIONARIO';
+        document.getElementById('perfil_tipo').disabled = false;
+        document.getElementById('perfil_email').readOnly = false;
+      } else {
+        loadProfile();
+      }
+      show('profileSection');
+    };
+
+    document.getElementById('btnSaveProfile').onclick = async ()=>{
+      const nome = document.getElementById('perfil_nome').value.trim();
+      const email = document.getElementById('perfil_email').value.trim();
+      const data_nascimento = document.getElementById('perfil_nascimento').value;
+      const genero = document.getElementById('perfil_genero').value;
+      const cpf = document.getElementById('perfil_cpf').value.trim();
+      const perfil = document.getElementById('perfil_tipo').value;
+      const msg = document.getElementById('profileMsg'); msg.textContent = '';
+      if (!nome || !email || !data_nascimento || !cpf || !perfil || !genero){ msg.textContent = 'Por favor preencha todos os campos.'; return; }
+      // Validação de ano de nascimento (>=1925)
+        const bDate = new Date(data_nascimento);
+        if (isNaN(bDate.getTime())){ msg.textContent = 'Data de nascimento inválida.'; return; }
+        const ano = bDate.getFullYear();
+        if (ano < 1925){ msg.textContent = 'Ano de nascimento inválido. Informe um ano igual ou posterior a 1925.'; return; }
+        const today = new Date();
+        let age = today.getFullYear() - bDate.getFullYear();
+        const m = today.getMonth() - bDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bDate.getDate())) age--;
+        if (age <= 13){ msg.textContent = 'Cadastro não permitido para menores de 14 anos.'; return; }
+      try{
+        if (!token){
+          // registrar
+          const res = await fetch(API_BASE + '/auth/register', { method: 'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ nome, email, data_nascimento, cpf, perfil, genero }) });
+          const data = await res.json();
+          if (res.ok && data.token){ token = data.token; currentUser = data.user; msg.textContent = 'Conta criada e logado.'; document.getElementById('perfil_email').readOnly = true; document.getElementById('perfil_tipo').disabled = true; setTimeout(()=>msg.textContent='',3000); loadProfile(); show('dashboard'); }
+          else { msg.textContent = data.error || 'Erro ao registrar'; }
+        } else {
+          // atualizar campos do perfil
+          const res = await api('/users/me', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nome, data_nascimento, cpf, genero})});
+          const data = await res.json();
+          currentUser = data; msg.textContent = 'Perfil salvo.'; setTimeout(()=>msg.textContent='',3000);
+          renderNav();
+        }
+      }catch(e){ msg.textContent = 'Erro ao salvar perfil'; }
+    };
+
+    document.getElementById('btnCancelProfile').onclick = ()=>{ if (currentUser) show('dashboard'); else show('loginSection'); };
+
+    document.getElementById('btnAddTime').onclick = ()=>{
+      const inp = document.createElement('input'); inp.type='time'; inp.className='time-entry'; document.getElementById('timesList').appendChild(inp);
+    };
+
+    document.getElementById('tipo').onchange = () => {
+      const v = document.getElementById('tipo').value;
+      document.getElementById('atestadoFields').classList.toggle('hidden', v !== 'ATESTADO_MEDICO');
+    };
+
+    async function loadProfile(){
+      try{
+        if (!token) return;
+        const res = await api('/users/me');
+        if (res.ok){ currentUser = await res.json(); document.getElementById('perfil_nome').value = currentUser.nome || ''; 
+          document.getElementById('perfil_tipo').value = currentUser.perfil || 'FUNCIONARIO';
+          document.getElementById('perfil_email').value = currentUser.email || '';
+          document.getElementById('perfil_nascimento').value = currentUser.data_nascimento || '';
+          document.getElementById('perfil_cpf').value = currentUser.cpf || '';
+          document.getElementById('perfil_genero').value = currentUser.genero || 'N_PREFIRO';
+          // after creation, profile type cannot be changed
+          document.getElementById('perfil_tipo').disabled = true;
+          document.getElementById('perfil_email').readOnly = true;
+        }
+      }catch(e){ console.warn(e); }
+    }
+
+    async function logout(){ token = null; currentUser = null; show('loginSection'); }
+
+    document.getElementById('btnCreate').onclick = async ()=>{
+      const data_evento = document.getElementById('data_evento').value;
+      const tipo_ocorrencia = document.getElementById('tipo').value;
+      const descricao = document.getElementById('descricao').value;
+      const times = Array.from(document.querySelectorAll('.time-entry')).map(i=>i.value).filter(Boolean);
+      const createMsg = document.getElementById('createMsg'); createMsg.textContent='';
+      if (!data_evento){ createMsg.textContent='Informe a data do evento.'; return; }
+      if (times.length === 0){ createMsg.textContent='Adicione pelo menos um horário.'; return; }
+      try{
+        const body = { data_evento, tipo_ocorrencia, horario_proposto: times.join(','), descricao };
+        const res = await api('/solicitacoes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+        const d = await res.json();
+        if (res.ok && d.id){
+          if (tipo_ocorrencia === 'ATESTADO_MEDICO'){
+            const file = document.getElementById('file').files[0];
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('data_inicio', document.getElementById('data_inicio').value);
+            fd.append('data_fim', document.getElementById('data_fim').value);
+            fd.append('dias_afastamento', document.getElementById('dias_afastamento').value);
+            await fetch(API_BASE + `/solicitacoes/${d.id}/upload`,{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});
+          }
+          document.getElementById('createMsg').textContent = 'Solicitação criada com sucesso.'; loadSolicitacoes();
+        } else { createMsg.textContent = d.error || 'Erro ao criar.'; }
+      }catch(ex){ createMsg.textContent = ex.message; }
+    };
+
+    // novo: carregar minhas solicitações e solicitações da equipe
+    async function loadSolicitacoes(){
+      try{
+        const resMine = await api('/solicitacoes');
+        const mine = await resMine.json();
+        const resTeam = await api('/solicitacoes/equipe');
+        const team = await resTeam.json();
+
+        // montar abas
+        const listaMine = document.getElementById('lista_mine'); listaMine.innerHTML = '';
+        mine.forEach(r => listaMine.appendChild(renderSolicitacaoCard(r, true)));
+
+        const listaTeam = document.getElementById('lista_team'); listaTeam.innerHTML = '';
+        team.forEach(r => listaTeam.appendChild(renderSolicitacaoCard(r, false)));
+
+        // attach handlers via delegation
+        document.querySelectorAll('.delbtn').forEach(b => b.onclick = async (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (!confirm('Confirma exclusão desta solicitação?')) return;
+          try{
+            const res = await api(`/solicitacoes/${id}`, { method: 'DELETE' });
+            if (res.ok) loadSolicitacoes(); else { const d = await res.json(); alert(d.error||'Erro'); }
+          }catch(ex){ alert(ex.message); }
+        });
+
+        document.querySelectorAll('.deferbtn').forEach(b => b.onclick = async (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (!confirm('Confirma DEFERIR esta solicitação?')) return;
+          const btn = e.target;
+          const card = btn.closest('.card');
+          const statusEl = card ? card.querySelector('.status-text') : null;
+          const prevStatus = statusEl ? statusEl.textContent : '';
+          // otimista: atualizar UI imediatamente
+          if (statusEl){ statusEl.textContent = 'DEFERIDO'; statusEl.style.color = '#065f46'; }
+          btn.disabled = true;
+          try{
+            const res = await api(`/solicitacoes/${id}/deferir`, { method: 'POST' });
+            if (res.ok) {
+              // sucesso, recarregar para garantir consistência
+              loadSolicitacoes();
+            } else {
+              const d = await res.json();
+              alert(d.error||'Erro');
+              // reverter
+              if (statusEl){ statusEl.textContent = prevStatus; statusEl.style.color = prevStatus === 'DEFERIDO' ? '#065f46' : '#000'; }
+              btn.disabled = false;
+            }
+          }catch(ex){ alert(ex.message); if (statusEl){ statusEl.textContent = prevStatus; statusEl.style.color = prevStatus === 'DEFERIDO' ? '#065f46' : '#000'; } btn.disabled = false; }
+        });
+      }catch(e){ console.warn(e); }
+    }
+
+    function renderSolicitacaoCard(r, isOwner){
+      const div = document.createElement('div'); div.className='card';
+      div.style.margin='6px 0';
+      const statusColor = r.status === 'DEFERIDO' ? '#065f46' : '#000';
+      const statusText = `<span class=\"status-text\" data-id=\"${r.id}\" style=\"color:${statusColor}\">${r.status}</span>`;
+      const left = `<b>${r.tipo_ocorrencia.replace('_',' ')}</b> - ${r.data_evento} - ${statusText}`;
+      let actions = '';
+      if (isOwner) actions += `<button data-id=\"${r.id}\" class=\"delbtn\" style=\"background:#ef4444;margin-left:8px\">Apagar</button>`;
+      // botão Deferir somente visível na aba da equipe e para perfis RH/GESTOR — front-end só monta quando aplicável
+      if (!isOwner && (currentUser && (currentUser.perfil === 'RH' || currentUser.perfil === 'GESTOR'))){
+        actions += `<button data-id=\"${r.id}\" class=\"deferbtn\" style=\"background:#10b981;margin-left:8px\">Deferir</button>`;
+      }
+      div.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center\"><div>${left}</div><div>${actions}</div></div><div style=\"font-size:13px;color:#444\">Horários: ${r.horario_proposto||'-'}</div><div style=\"margin-top:6px;color:#333\">${r.descricao ? r.descricao : ''}</div><div style=\"margin-top:6px;color:#333\">${r.justificativa_recusa ? 'Justificativa de recusa: '+r.justificativa_recusa : ''}</div>`;
+      return div;
+    }
+
+    // inicial
+    // tabs
+    document.getElementById('tabMine').onclick = () => { document.getElementById('lista_mine').classList.remove('hidden'); document.getElementById('lista_team').classList.add('hidden'); };
+    document.getElementById('tabTeam').onclick = () => { document.getElementById('lista_mine').classList.add('hidden'); document.getElementById('lista_team').classList.remove('hidden'); };
+
+    show('loginSection');
+  </script>
+</body>
+</html>
