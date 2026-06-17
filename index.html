@@ -3,51 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AfterBefore - Demo</title>
-  <style>
-    :root{--bg:#f5f7fb;--card:#fff;--accent:#1f6feb;--muted:#6b7280}
-    *{box-sizing:border-box}
-    body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:0}
-    header{background:linear-gradient(90deg,#0f172a 0%, #1f2937 100%);color:#fff;padding:14px 20px}
-    .container{max-width:1000px;margin:20px auto;padding:16px}
-    .card{background:var(--card);padding:16px;border-radius:8px;box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:16px}
-    .grid{display:flex;gap:16px}
-    .col{flex:1}
-    label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
-    input,select,textarea,button{font-size:14px}
-    input,select,textarea{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:6px}
-    textarea{min-height:100px}
-    button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
-    nav{display:flex;gap:8px}
-    .navbtn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.12);padding:8px 10px;border-radius:6px;cursor:pointer}
-    /* tabs dentro de cards devem ter contraste escuro */
-    .card .navbtn{background:transparent;color:#111;border:1px solid #e6e9ef;padding:6px 8px}
-    .hidden{display:none}
-    .times-list{display:flex;gap:8px;flex-wrap:wrap}
-    .times-list input{width:auto}
-    .error{color:#b91c1c;margin-top:8px}
-    .success{color:#065f46;margin-top:8px}
-  </style>
+  <title>JustPonto</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header>
-    <div class="container" style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <strong style="font-size:22px">AfterBefore</strong>
-        <div style="font-size:12px;opacity:.85">Gestão de Justificativas de Ponto</div>
+    <div class="container header-row">
+      <div class="brand-wrap">
+        <img src="/logo_decoded.png" alt="JustPonto" id="logo" />
+        <div>
+          <strong class="brand">JustPonto</strong>
+          <div class="brand-sub">Solicite. Defira. Siga em frente.</div>
+        </div>
       </div>
-      <div id="nav" style="display:flex;gap:8px;align-items:center"></div>
+      <div id="nav" class="nav-controls"></div>
     </div>
   </header>
 
   <main class="container">
     <section id="loginSection" class="card">
-      <h2>Entrar (demo)</h2>
+      <h2>Entrar</h2>
       <label for="email">E-mail corporativo</label>
       <input id="email" placeholder="email@empresa.com" />
-      <div style="margin-top:8px;display:flex;gap:8px">
+      <div class="actions-row">
         <button id="btnLogin">Entrar</button>
-        <button id="btnShowRegister" class="" type="button">Criar/Editar Perfil</button>
+        <button id="btnShowRegister" class="" type="button">Criar Perfil</button>
       </div>
       <div id="loginError" class="error" role="alert"></div>
     </section>
@@ -74,7 +54,7 @@
         <option value="GESTOR">Chefe</option>
         <option value="RH">RH</option>
       </select>
-      <div style="margin-top:10px">
+      <div class="actions-row">
         <button id="btnSaveProfile">Salvar Perfil</button>
         <button id="btnCancelProfile" type="button">Cancelar</button>
       </div>
@@ -101,7 +81,7 @@
             <input class="time-entry" type="time" />
             <input class="time-entry" type="time" />
           </div>
-          <div style="margin-top:6px"><button id="btnAddTime" type="button">Adicionar Horário</button></div>
+          <div class="small-actions"><button id="btnAddTime" type="button">Adicionar Horário</button></div>
 
           <label>Descrição (detalhe seu pedido)</label>
           <textarea id="descricao" placeholder="Explique o motivo detalhadamente..."></textarea>
@@ -117,16 +97,16 @@
             <input id="file" type="file" />
           </div>
 
-          <div style="margin-top:10px">
+          <div class="actions-row">
             <button id="btnCreate">Criar Solicitação</button>
             <div id="createMsg" class="error"></div>
           </div>
         </div>
 
         <div class="col card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="card-header">
             <h3 id="solicitacoes_title">Solicitações</h3>
-            <div>
+            <div class="card-actions">
               <button id="tabMine" class="navbtn" type="button">Minhas Solicitações</button>
               <button id="tabTeam" class="navbtn" type="button">Solicitações da Equipe</button>
             </div>
@@ -143,6 +123,8 @@
     let currentUser = null;
     const API_BASE = (location.protocol === 'file:') ? 'http://localhost:3000' : '';
 
+    // logo definido no atributo src (caminho absoluto) para evitar problemas de fetch/caminho
+
     function show(section){
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('profileSection').classList.add('hidden');
@@ -158,11 +140,15 @@
         const btn = document.createElement('button'); btn.textContent='Perfil'; btn.className='navbtn'; btn.onclick=()=> show('profileSection'); nav.appendChild(btn);
         return;
       }
-      const info = document.createElement('div'); info.style.color='#fff'; info.style.marginRight='8px'; info.textContent = currentUser.email + ' ('+currentUser.perfil+')';
+      const info = document.createElement('div'); info.className='nav-info'; info.textContent = currentUser.email + ' ('+currentUser.perfil+')';
       nav.appendChild(info);
       const btnDash = document.createElement('button'); btnDash.textContent='Dashboard'; btnDash.className='navbtn'; btnDash.onclick=()=> show('dashboard'); nav.appendChild(btnDash);
       const btnProfile = document.createElement('button'); btnProfile.textContent='Perfil'; btnProfile.className='navbtn'; btnProfile.onclick=()=> show('profileSection'); nav.appendChild(btnProfile);
       const btnLogout = document.createElement('button'); btnLogout.textContent='Sair'; btnLogout.className='navbtn'; btnLogout.onclick=logout; nav.appendChild(btnLogout);
+
+      // ocultar aba "Solicitações da Equipe" para Funcionários
+      const tabTeamEl = document.getElementById('tabTeam');
+      if (tabTeamEl) tabTeamEl.style.display = (currentUser && currentUser.perfil === 'FUNCIONARIO') ? 'none' : '';
     }
 
     async function api(path, opts={}){
@@ -201,10 +187,11 @@
         document.getElementById('perfil_tipo').value = 'FUNCIONARIO';
         document.getElementById('perfil_tipo').disabled = false;
         document.getElementById('perfil_email').readOnly = false;
+        show('profileSection');
       } else {
-        loadProfile();
+        // quando já logado, edição de perfil deve ser feita via botão Perfil no topo
+        alert('Para editar seu perfil, utilize o botão "Perfil" no cabeçalho.');
       }
-      show('profileSection');
     };
 
     document.getElementById('btnSaveProfile').onclick = async ()=>{
@@ -271,7 +258,22 @@
       }catch(e){ console.warn(e); }
     }
 
-    async function logout(){ token = null; currentUser = null; show('loginSection'); }
+    async function logout(){
+      token = null; currentUser = null;
+      // limpar campos sensíveis e estado UI
+      document.getElementById('email').value = '';
+      document.getElementById('perfil_nome').value = '';
+      document.getElementById('perfil_email').value = '';
+      document.getElementById('perfil_nascimento').value = '';
+      document.getElementById('perfil_cpf').value = '';
+      document.getElementById('perfil_tipo').value = 'FUNCIONARIO';
+      document.getElementById('perfil_genero').value = 'N_PREFIRO';
+      document.getElementById('descricao').value = '';
+      document.getElementById('timesList').innerHTML = '<input class="time-entry" type="time" />\n            <input class="time-entry" type="time" />';
+      document.getElementById('lista_mine').innerHTML = '';
+      document.getElementById('lista_team').innerHTML = '';
+      show('loginSection');
+    }
 
     document.getElementById('btnCreate').onclick = async ()=>{
       const data_evento = document.getElementById('data_evento').value;
@@ -305,8 +307,13 @@
       try{
         const resMine = await api('/solicitacoes');
         const mine = await resMine.json();
-        const resTeam = await api('/solicitacoes/equipe');
-        const team = await resTeam.json();
+        let team = [];
+        // tentar carregar solicitações da equipe, mas respeitar permissões
+        try{
+          const resTeam = await api('/solicitacoes/equipe');
+          if (resTeam.status === 403) team = [];
+          else team = await resTeam.json();
+        }catch(e){ team = []; }
 
         // montar abas
         const listaMine = document.getElementById('lista_mine'); listaMine.innerHTML = '';

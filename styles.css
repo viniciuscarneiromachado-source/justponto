@@ -1,0 +1,51 @@
+:root{
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --accent: #0b3b6f; /* azul escuro */
+  --accent-2: #ff8a1f; /* laranja */
+  --muted: #6b7280;
+}
+*{box-sizing:border-box}
+body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:0;color:#111}
+header{background:linear-gradient(90deg,var(--accent) 0%, #1f2937 100%);color:#fff;padding:14px 20px}
+.container{max-width:1000px;margin:20px auto;padding:16px}
+.card{background:var(--card);padding:16px;border-radius:8px;box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:16px}
+.grid{display:flex;gap:16px}
+.col{flex:1}
+label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+input,select,textarea,button{font-size:14px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:6px}
+textarea{min-height:100px}
+button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+.navbtn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.12);padding:8px 10px;border-radius:6px;cursor:pointer}
+.card .navbtn{background:transparent;color:#111;border:1px solid #e6e9ef;padding:6px 8px}
+.hidden{display:none}
+.times-list{display:flex;gap:8px;flex-wrap:wrap}
+.times-list input{width:auto}
+.error{color:#b91c1c;margin-top:8px}
+.success{color:#065f46;margin-top:8px}
+
+/* Header layout */
+.header-row{display:flex;justify-content:space-between;align-items:center}
+.brand-wrap{display:flex;gap:12px;align-items:center}
+.brand{font-size:22px}
+.brand-sub{font-size:12px;opacity:.95;color:#dfe7f6}
+#logo{max-height:64px;display:block}
+.nav-controls{display:flex;gap:8px;align-items:center}
+.nav-info{color:#fff;margin-right:8px}
+
+/* small helpers */
+.actions-row{margin-top:8px;display:flex;gap:8px}
+.small-actions{margin-top:6px}
+.card-header{display:flex;justify-content:space-between;align-items:center}
+.card-actions{display:flex;gap:8px}
+
+/* solicitacao card */
+.solicitacao-card{margin:6px 0}
+.solicitacao-left{font-size:14px}
+.solicitacao-meta{font-size:13px;color:#444}
+.solicitacao-desc{margin-top:6px;color:#333}
+
+/* footer */
+.site-footer{border-top:1px solid #e6e9ef;padding:18px 0;background:#fff;margin-top:20px}
+.site-footer .container{color:#6b7280;text-align:center}
