@@ -14,6 +14,8 @@ app.use(cors());
 app.use(express.json());
 // Serve the frontend from the project `public` folder at root
 app.use(express.static(path.join(__dirname, 'public')));
+// servir também a pasta de imagens da raiz (ex.: img/justpontologo.png)
+app.use('/img', express.static(path.join(__dirname, 'img')));
 
 const PORT = process.env.PORT || 3000;
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
@@ -307,6 +309,22 @@ app.get('/rh/atestados/:solicitacaoId/download', requireAuth, requireRole(['RH']
       await decryptFile(row.arquivo_path_criptografado, tmp);
       res.download(tmp, (err2) => { fs.unlinkSync(tmp); });
     } catch (ex) { res.status(500).json({ error: ex.message }); }
+  });
+});
+
+// RH: aprovar atestado (apenas RH)
+app.post('/rh/atestados/:solicitacaoId/aprovar', requireAuth, requireRole(['RH']), (req, res) => {
+  const id = req.params.solicitacaoId;
+  // verificar existência do atestado e da solicitação
+  db.get('SELECT s.* FROM atestados_saude a JOIN solicitacoes s ON s.id = a.solicitacao_id WHERE a.solicitacao_id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Atestado não encontrado' });
+    // atualizar status para APROVADO e registrar na trilha
+    db.run('UPDATE solicitacoes SET status = ?, gestor_aprovador_id = ? WHERE id = ?', ['APROVADO', req.user.id, id], function(e){
+      if (e) return res.status(500).json({ error: e.message });
+      db.run('INSERT INTO trilha_auditoria (solicitacao_id, usuario_acao_id, acao_realizada, dados_anteriores) VALUES (?,?,?,?)', [id, req.user.id, 'Aprovado pelo RH', null]);
+      res.json({ ok: true });
+    });
   });
 });
 

@@ -10,7 +10,7 @@
   <header>
     <div class="container header-row">
       <div class="brand-wrap">
-        <img src="/logo_decoded.png" alt="JustPonto" id="logo" />
+        <img src="/img/justpontologo.png" alt="JustPonto" id="logo" />
         <div>
           <strong class="brand">JustPonto</strong>
           <div class="brand-sub">Solicite. Defira. Siga em frente.</div>
@@ -123,7 +123,7 @@
     let currentUser = null;
     const API_BASE = (location.protocol === 'file:') ? 'http://localhost:3000' : '';
 
-    // logo definido no atributo src (caminho absoluto) para evitar problemas de fetch/caminho
+    // logo definido no atributo src (caminho absoluto /img/...) para ser servido pelo servidor
 
     function show(section){
       document.getElementById('loginSection').classList.add('hidden');
@@ -356,6 +356,39 @@
             }
           }catch(ex){ alert(ex.message); if (statusEl){ statusEl.textContent = prevStatus; statusEl.style.color = prevStatus === 'DEFERIDO' ? '#065f46' : '#000'; } btn.disabled = false; }
         });
+
+        // handlers para download e aprovação de atestados (visíveis apenas para RH)
+        document.querySelectorAll('.download-atestado').forEach(b => b.onclick = async (e) => {
+          const id = e.target.getAttribute('data-id');
+          downloadAtestado(id);
+        });
+
+        document.querySelectorAll('.aprovar-atestado').forEach(b => b.onclick = async (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (!confirm('Confirma aprovação deste atestado?')) return;
+          try{
+            const res = await api(`/rh/atestados/${id}/aprovar`, { method: 'POST' });
+            if (res.ok) {
+              alert('Atestado aprovado com sucesso.');
+              loadSolicitacoes();
+            } else { const d = await res.json(); alert(d.error || 'Erro'); }
+          }catch(err){ alert(err.message); }
+        });
+
+        // Notificações locais para o colaborador sobre aprovações novas
+        try{
+          const stored = localStorage.getItem('notifiedAprovados') || '[]';
+          const notified = JSON.parse(stored);
+          let changed = false;
+          mine.forEach(r => {
+            if (r.status === 'APROVADO' && !notified.includes(r.id)){
+              alert('Seu atestado foi aprovado pelo setor de Recursos Humanos');
+              notified.push(r.id);
+              changed = true;
+            }
+          });
+          if (changed) localStorage.setItem('notifiedAprovados', JSON.stringify(notified));
+        }catch(e){ console.warn('notify', e); }
       }catch(e){ console.warn(e); }
     }
 
@@ -371,8 +404,25 @@
       if (!isOwner && (currentUser && (currentUser.perfil === 'RH' || currentUser.perfil === 'GESTOR'))){
         actions += `<button data-id=\"${r.id}\" class=\"deferbtn\" style=\"background:#10b981;margin-left:8px\">Deferir</button>`;
       }
+      // Se for atestado médico, adicionar botões de visualização e aprovação apenas para RH
+      if (r.tipo_ocorrencia === 'ATESTADO_MEDICO' && currentUser && currentUser.perfil === 'RH'){
+        actions += `<button data-id=\"${r.id}\" class=\"download-atestado\" style=\"background:#2563eb;margin-left:8px\">Visualizar Anexo</button>`;
+        actions += `<button data-id=\"${r.id}\" class=\"aprovar-atestado\" style=\"background:#2563eb;margin-left:8px\">Aprovar Atestado</button>`;
+      }
       div.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center\"><div>${left}</div><div>${actions}</div></div><div style=\"font-size:13px;color:#444\">Horários: ${r.horario_proposto||'-'}</div><div style=\"margin-top:6px;color:#333\">${r.descricao ? r.descricao : ''}</div><div style=\"margin-top:6px;color:#333\">${r.justificativa_recusa ? 'Justificativa de recusa: '+r.justificativa_recusa : ''}</div>`;
       return div;
+    }
+
+    async function downloadAtestado(solicitacaoId){
+      try{
+        const res = await api(`/rh/atestados/${solicitacaoId}/download`);
+        if (!res.ok) { const d = await res.json(); alert(d.error||'Erro ao baixar'); return; }
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `atestados-${solicitacaoId}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+        window.URL.revokeObjectURL(url);
+      }catch(e){ alert('Erro ao baixar anexo: '+e.message); }
     }
 
     // inicial
