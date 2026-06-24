@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { db, init } = require('./db');
 const { encryptFile, decryptFile } = require('./utils/crypto');
 const { stringify } = require('csv-stringify/sync');
@@ -54,24 +55,29 @@ function requireRole(roles) {
 
 // Mock login (in prod, integrate SSO providers)
 app.post('/auth/login', (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email necessário' });
+  const { email, senha } = req.body;
+  if (!email || !senha) return res.status(400).json({ error: 'Email e senha são necessários' });
   db.get('SELECT * FROM usuarios WHERE email = ?', [email], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (row) {
-      const token = jwt.sign({ id: row.id, email: row.email, perfil: row.perfil }, process.env.JWT_SECRET || 'algumsegredoseguro');
-      return res.json({ token, user: row });
-    }
-    return res.status(404).json({ error: 'Usuário não encontrado. Registre-se primeiro.' });
+    if (!row) return res.status(404).json({ error: 'Usuário não encontrado. Registre-se primeiro.' });
+    if (!row.password_hash) return res.status(400).json({ error: 'Usuário sem senha definida' });
+    const match = bcrypt.compareSync(senha, row.password_hash);
+    if (!match) return res.status(401).json({ error: 'Credenciais inválidas' });
+    db.get('SELECT id, nome, email, perfil, gestor_id, data_nascimento, cpf, genero, criado_em FROM usuarios WHERE id = ?', [row.id], (e, safeUser) => {
+      if (e) return res.status(500).json({ error: e.message });
+      const token = jwt.sign({ id: safeUser.id, email: safeUser.email, perfil: safeUser.perfil }, process.env.JWT_SECRET || 'algumsegredoseguro');
+      return res.json({ token, user: safeUser });
+    });
   });
 });
 
 // Registration endpoint (required fields)
 app.post('/auth/register', (req, res) => {
-  const { nome, email, data_nascimento, cpf, perfil, genero } = req.body;
+  const { nome, email, data_nascimento, cpf, perfil, genero, senha } = req.body;
   const allowed = ['FUNCIONARIO', 'GESTOR', 'RH'];
-  if (!nome || !email || !data_nascimento || !cpf || !perfil) return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  if (!nome || !email || !data_nascimento || !cpf || !perfil || !senha) return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
   if (!allowed.includes(perfil)) return res.status(400).json({ error: 'Perfil inválido' });
+  if (typeof senha !== 'string' || senha.length < 8) return res.status(400).json({ error: 'Senha deve ter no mínimo 8 caracteres' });
   // validação de ano de nascimento mínimo
   const bDate = new Date(data_nascimento);
   if (isNaN(bDate.getTime())) return res.status(400).json({ error: 'Data de nascimento inválida.' });
@@ -83,16 +89,21 @@ app.post('/auth/register', (req, res) => {
   const m = today.getMonth() - bDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < bDate.getDate())) age--;
   if (age <= 13) return res.status(400).json({ error: 'Cadastro não permitido para menores de 14 anos.' });
-  // check unique email
-  db.get('SELECT id FROM usuarios WHERE email = ?', [email], (err, existing) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (existing) return res.status(400).json({ error: 'E-mail já cadastrado' });
-    db.run('INSERT INTO usuarios (nome, email, perfil, data_nascimento, cpf, genero) VALUES (?,?,?,?,?,?)', [nome, email, perfil, data_nascimento, cpf, genero || null], function(err2){
-      if (err2) return res.status(500).json({ error: err2.message });
-      db.get('SELECT * FROM usuarios WHERE id = ?', [this.lastID], (e,r) => {
-        if (e) return res.status(500).json({ error: e.message });
-        const token = jwt.sign({ id: r.id, email: r.email, perfil: r.perfil }, process.env.JWT_SECRET || 'algumsegredoseguro');
-        res.json({ token, user: r });
+  // check cpf unique first, then email
+  db.get('SELECT id FROM usuarios WHERE cpf = ?', [cpf], (errCpf, cpfExist) => {
+    if (errCpf) return res.status(500).json({ error: errCpf.message });
+    if (cpfExist) return res.status(400).json({ error: 'CPF já cadastrado' });
+    db.get('SELECT id FROM usuarios WHERE email = ?', [email], (errEmail, emailExist) => {
+      if (errEmail) return res.status(500).json({ error: errEmail.message });
+      if (emailExist) return res.status(400).json({ error: 'E-mail já cadastrado' });
+      const password_hash = bcrypt.hashSync(senha, 8);
+      db.run('INSERT INTO usuarios (nome, email, perfil, data_nascimento, cpf, genero, password_hash) VALUES (?,?,?,?,?,?,?)', [nome, email, perfil, data_nascimento, cpf, genero || null, password_hash], function(err2){
+        if (err2) return res.status(500).json({ error: err2.message });
+        db.get('SELECT id, nome, email, perfil, gestor_id, data_nascimento, cpf, genero, criado_em FROM usuarios WHERE id = ?', [this.lastID], (e,r) => {
+          if (e) return res.status(500).json({ error: e.message });
+          const token = jwt.sign({ id: r.id, email: r.email, perfil: r.perfil }, process.env.JWT_SECRET || 'algumsegredoseguro');
+          res.json({ token, user: r });
+        });
       });
     });
   });
@@ -161,10 +172,15 @@ app.post('/solicitacoes/:id/deferir', requireAuth, requireRole(['RH','GESTOR']),
 app.post('/solicitacoes', requireAuth, (req, res) => {
   const { data_evento, tipo_ocorrencia, horario_proposto, descricao } = req.body;
   if (!data_evento || !tipo_ocorrencia) return res.status(400).json({ error: 'Dados incompletos' });
-  // Validação de ano: não permite anos anteriores
-  const anoEvento = new Date(data_evento).getFullYear();
-  const anoAtual = new Date().getFullYear();
-  if (anoEvento < anoAtual) return res.status(400).json({ error: 'Não é possível solicitar justificativa para batida de ponto em anos anteriores' });
+  // Validação de data: não permite anos anteriores nem datas futuras
+  const eventoDate = new Date(data_evento);
+  if (isNaN(eventoDate.getTime())) return res.status(400).json({ error: 'Data inválida' });
+  const today = new Date();
+  // zero out time for comparison
+  const ev = new Date(eventoDate.getFullYear(), eventoDate.getMonth(), eventoDate.getDate());
+  const td = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (ev < td) return res.status(400).json({ error: 'Não é possível solicitar justificativa para batida de ponto em dias anteriores' });
+  if (ev > td) return res.status(400).json({ error: 'Não é possível criar solicitações para datas futuras' });
 
   // horario_proposto pode ser um array de horários ou string CSV
   let horarios = [];

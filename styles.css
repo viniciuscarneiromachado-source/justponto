@@ -1,5 +1,5 @@
 :root{
-  --bg: #f5f7fb;
+  --bg: #022B58; /* body background solicitado */
   --card: #ffffff;
   --accent: #0b3b6f; /* azul escuro */
   --accent-2: #ff8a1f; /* laranja */
@@ -7,7 +7,7 @@
 }
 *{box-sizing:border-box}
 body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:0;color:#111}
-header{background:linear-gradient(90deg,var(--accent) 0%, #1f2937 100%);color:#fff;padding:14px 20px}
+header{background:#FEFEFE;color:#111;padding:14px 20px}
 .container{max-width:1000px;margin:20px auto;padding:16px}
 .card{background:var(--card);padding:16px;border-radius:8px;box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:16px}
 .grid{display:flex;gap:16px}
@@ -17,8 +17,8 @@ input,select,textarea,button{font-size:14px}
 input,select,textarea{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:6px}
 textarea{min-height:100px}
 button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
-.navbtn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.12);padding:8px 10px;border-radius:6px;cursor:pointer}
-.card .navbtn{background:transparent;color:#111;border:1px solid #e6e9ef;padding:6px 8px}
+.navbtn{background:transparent;color:var(--bg);border:1px solid rgba(2,43,88,.12);padding:8px 10px;border-radius:6px;cursor:pointer}
+.card .navbtn{background:transparent;color:var(--bg);border:1px solid #e6e9ef;padding:6px 8px}
 .hidden{display:none}
 .times-list{display:flex;gap:8px;flex-wrap:wrap}
 .times-list input{width:auto}
@@ -29,10 +29,10 @@ button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-
 .header-row{display:flex;justify-content:space-between;align-items:center}
 .brand-wrap{display:flex;gap:12px;align-items:center}
 .brand{font-size:22px}
-.brand-sub{font-size:12px;opacity:.95;color:#dfe7f6}
+.brand-sub{font-size:12px;opacity:.95;color:var(--bg)}
 #logo{max-height:64px;display:block}
 .nav-controls{display:flex;gap:8px;align-items:center}
-.nav-info{color:#fff;margin-right:8px}
+.nav-info{color:var(--bg);margin-right:8px}
 
 /* small helpers */
 .actions-row{margin-top:8px;display:flex;gap:8px}
@@ -47,5 +47,5 @@ button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-
 .solicitacao-desc{margin-top:6px;color:#333}
 
 /* footer */
-.site-footer{border-top:1px solid #e6e9ef;padding:18px 0;background:#fff;margin-top:20px}
-.site-footer .container{color:#6b7280;text-align:center}
+.site-footer{border-top:1px solid rgba(0,0,0,.05);padding:18px 0;background:#F27D16;margin-top:20px}
+.site-footer .container{color:#fff;text-align:center}

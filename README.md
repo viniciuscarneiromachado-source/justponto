@@ -41,13 +41,66 @@ Centralizar e auditar solicitações de correção de ponto e atestados, reduzin
 - Proteção de uploads: tipos permitidos `.pdf`, `.png`, `.jpg`, `.jpeg` e tamanho máximo de 5MB.
 
 ## Modelagem (resumo)
-O sistema utiliza um modelo relacional simples para controlar usuários, solicitações e atestados. Tabelas principais:
+O sistema utiliza um modelo relacional simples para controlar usuários, solicitações, horários normalizados, atestados e a trilha de auditoria. Tabelas principais e campos relevantes:
 
-- `usuarios`: armazena `id`, `nome`, `email`, `perfil` (FUNCIONARIO/GESTOR/RH), `gestor_id`, `criado_em`.
+- `usuarios`:
+	- `id` INTEGER PRIMARY KEY AUTOINCREMENT
+	- `nome` TEXT
+	- `email` TEXT UNIQUE
+	- `perfil` TEXT (ex.: `FUNCIONARIO`, `GESTOR`, `RH`)
+	- `gestor_id` INTEGER (FK para `usuarios.id`)
+	- `data_nascimento` DATE
+	- `genero` TEXT
+	- `cpf` TEXT (único, indexado)
+	- `password_hash` TEXT
+	- `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP
 
-- `solicitacoes`: armazena `id`, `usuario_id`, `data_evento`, `tipo_occorrencia`, `horario_proposto`, `status` (PENDENTE/EM_ANALISE_RH/APROVADO/RECUSADO), `justificativa_recusa`, `gestor_aprovador_id`, `criado_em`.
+- `solicitacoes`:
+	- `id` INTEGER PRIMARY KEY AUTOINCREMENT
+	- `usuario_id` INTEGER (FK → `usuarios.id`)
+	- `data_evento` DATE
+	- `tipo_ocorrencia` TEXT (ex.: `ESQUECIMENTO`, `ATESTADO_MEDICO`, ...)
+	- `horario_proposto` TEXT (CSV de horários)
+	- `descricao` TEXT
+	- `horas_calculadas` REAL (calculada quando há exatamente 2 horários)
+	- `status` TEXT (valores usados: `PENDENTE`, `EM_ANALISE_RH`, `DEFERIDO`, `APROVADO`, `RECUSADO`)
+	- `justificativa_recusa` TEXT
+	- `gestor_aprovador_id` INTEGER (FK → `usuarios.id`)
+	- `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP
 
-- `atestados_saude`: isolada por LGPD, contém `id`, `solicitacao_id`, `arquivo_path_criptografado`, `data_inicio`, `data_fim`, `cid_mascarado`, `observacoes`, `criado_em`.
+- `solicitacao_horarios` (normalização de horários):
+	- `id` INTEGER PRIMARY KEY AUTOINCREMENT
+	- `solicitacao_id` INTEGER (FK → `solicitacoes.id`)
+	- `horario` TEXT
+
+- `atestados_saude` (dados sensíveis isolados e arquivos criptografados):
+	- `id` INTEGER PRIMARY KEY AUTOINCREMENT
+	- `solicitacao_id` INTEGER (FK → `solicitacoes.id`)
+	- `arquivo_path_criptografado` TEXT (arquivo armazenado criptografado em `uploads/`)
+	- `data_inicio` DATE
+	- `data_fim` DATE
+	- `dias_afastamento` INTEGER
+	- `cid` TEXT (aplicar mascaramento para exibição conforme LGPD)
+
+- `trilha_auditoria` (append-only):
+	- `id` INTEGER PRIMARY KEY AUTOINCREMENT
+	- `solicitacao_id` INTEGER (pode ser NULL para eventos globais)
+	- `usuario_acao_id` INTEGER (FK → `usuarios.id`, pode ser NULL)
+	- `acao_realizada` TEXT
+	- `timestamp_oficial` DATETIME DEFAULT CURRENT_TIMESTAMP
+	- `dados_anteriores` TEXT (JSON com snapshot anterior quando aplicável)
+
+- `configuracoes_prazos` (parametrização administrativa):
+	- `id` INTEGER PRIMARY KEY AUTOINCREMENT
+	- `dias_limite_funcionario` INTEGER DEFAULT 5
+	- `dias_limite_gestor` INTEGER DEFAULT 3
+	- `atualizado_por` INTEGER (FK → `usuarios.id`)
+	- `atualizado_em` DATETIME DEFAULT CURRENT_TIMESTAMP
+
+Observações:
+- Arquivos de atestado são criptografados com AES-256 antes de serem persistidos no disco; apenas o RH pode descriptografar para download temporário.
+- Campos sensíveis (ex.: CID) são mascarados conforme regras de acesso (RH/medicina têm visão completa).
+- A aplicação mantém índices e rotinas de migração para adicionar colunas a bases existentes (`scripts/add_columns.js`).
 
 ## Como executar
 1. Instale dependências:
@@ -70,9 +123,3 @@ npm start
 - `utils/crypto.js` - funções de criptografia de arquivos (AES-256)
 - `public/index.html` - frontend estático
 - `uploads/` - diretório de arquivos criptografados (configurável via `UPLOAD_DIR`)
-
-## Observações de implementação
-- Endpoint `/auth/login` cria/retorna usuários por email para propósito de desenvolvimento/testes. Para produção, integrar SSO corporativo/OIDC/SAML conforme política da organização.
-- Acesso a atestados: somente usuários com perfil `RH` podem baixar o PDF original via endpoint `/rh/atestados/:id/download`. Gestores visualizam informações mascaradas.
-- Trilha de auditoria é tratada como append-only pela aplicação (não há endpoints para exclusão/alteração).
-- Exportação: `/export?format=csv|json` para dados aprovados.

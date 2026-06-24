@@ -89,6 +89,30 @@ function init() {
     addColumnIfNotExists('usuarios', 'data_nascimento DATE', (e)=>{});
     addColumnIfNotExists('usuarios', 'cpf TEXT', (e)=>{});
     addColumnIfNotExists('usuarios', 'genero TEXT', (e)=>{});
+    addColumnIfNotExists('usuarios', 'password_hash TEXT', (e)=>{});
+    // Antes de criar índice único, limpar possíveis CPFs duplicados existentes
+    db.all(`SELECT cpf FROM usuarios WHERE cpf IS NOT NULL GROUP BY cpf HAVING COUNT(*) > 1;`, (err, rows) => {
+      if (err) return; // nada a fazer se falhar
+      if (!rows || rows.length === 0) {
+        db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_cpf_unique ON usuarios(cpf);`);
+        return;
+      }
+      // Para cada CPF duplicado, manter apenas o registro com menor id e limpar os demais (setar NULL)
+      rows.forEach(r => {
+        const cpfVal = r.cpf;
+        db.all('SELECT id FROM usuarios WHERE cpf = ? ORDER BY id ASC', [cpfVal], (e2, ids) => {
+          if (e2 || !ids || ids.length <= 1) return;
+          const keep = ids[0].id;
+          const toNull = ids.slice(1).map(x => x.id);
+          const stmt = db.prepare('UPDATE usuarios SET cpf = NULL WHERE id = ?');
+          toNull.forEach(id => stmt.run(id));
+          stmt.finalize(() => {
+            // tentar criar índice após limpar esse grupo (criação tentada cada vez, but IF NOT EXISTS avoids errors)
+            db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_cpf_unique ON usuarios(cpf);`);
+          });
+        });
+      });
+    });
     addColumnIfNotExists('solicitacoes', 'descricao TEXT', (e)=>{});
     addColumnIfNotExists('solicitacoes', 'horas_calculadas REAL', (e)=>{});
 

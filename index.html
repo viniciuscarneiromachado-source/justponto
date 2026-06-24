@@ -25,6 +25,8 @@
       <h2>Entrar</h2>
       <label for="email">E-mail corporativo</label>
       <input id="email" placeholder="email@empresa.com" />
+      <label for="password">Senha</label>
+      <input id="password" type="password" placeholder="Sua senha" />
       <div class="actions-row">
         <button id="btnLogin">Entrar</button>
         <button id="btnShowRegister" class="" type="button">Criar Perfil</button>
@@ -48,6 +50,8 @@
       </select>
       <label>CPF</label>
       <input id="perfil_cpf" />
+      <label>Senha</label>
+      <input id="perfil_senha" type="password" />
       <label>Perfil</label>
       <select id="perfil_tipo">
         <option value="FUNCIONARIO">Funcionário</option>
@@ -167,10 +171,12 @@
 
     document.getElementById('btnLogin').onclick = async () => {
       const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('password').value || '';
       const err = document.getElementById('loginError'); err.textContent='';
       if (!email){ err.textContent = 'Por favor informe seu e-mail corporativo.'; return; }
+      if (!senha || senha.length < 8){ err.textContent = 'Informe sua senha (mínimo 8 caracteres).'; return; }
       try{
-        const res = await fetch(API_BASE + '/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+        const res = await fetch(API_BASE + '/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email, senha})});
         const data = await res.json();
         if (res.ok && data.token){ token = data.token; currentUser = data.user; await loadProfile(); show('dashboard'); }
         else{ err.textContent = data.error || 'Erro ao logar'; }
@@ -203,6 +209,8 @@
       const perfil = document.getElementById('perfil_tipo').value;
       const msg = document.getElementById('profileMsg'); msg.textContent = '';
       if (!nome || !email || !data_nascimento || !cpf || !perfil || !genero){ msg.textContent = 'Por favor preencha todos os campos.'; return; }
+      const senha = document.getElementById('perfil_senha').value || '';
+      if (!token && (!senha || senha.length < 8)) { msg.textContent = 'Senha obrigatória (mínimo 8 caracteres)'; return; }
       // Validação de ano de nascimento (>=1925)
         const bDate = new Date(data_nascimento);
         if (isNaN(bDate.getTime())){ msg.textContent = 'Data de nascimento inválida.'; return; }
@@ -216,7 +224,7 @@
       try{
         if (!token){
           // registrar
-          const res = await fetch(API_BASE + '/auth/register', { method: 'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ nome, email, data_nascimento, cpf, perfil, genero }) });
+          const res = await fetch(API_BASE + '/auth/register', { method: 'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ nome, email, data_nascimento, cpf, perfil, genero, senha }) });
           const data = await res.json();
           if (res.ok && data.token){ token = data.token; currentUser = data.user; msg.textContent = 'Conta criada e logado.'; document.getElementById('perfil_email').readOnly = true; document.getElementById('perfil_tipo').disabled = true; setTimeout(()=>msg.textContent='',3000); loadProfile(); show('dashboard'); }
           else { msg.textContent = data.error || 'Erro ao registrar'; }
@@ -396,20 +404,22 @@
       const div = document.createElement('div'); div.className='card';
       div.style.margin='6px 0';
       const statusColor = r.status === 'DEFERIDO' ? '#065f46' : '#000';
-      const statusText = `<span class=\"status-text\" data-id=\"${r.id}\" style=\"color:${statusColor}\">${r.status}</span>`;
-      const left = `<b>${r.tipo_ocorrencia.replace('_',' ')}</b> - ${r.data_evento} - ${statusText}`;
+      const statusText = `<span class="status-text" data-id="${r.id}" style="color:${statusColor}">${r.status}</span>`;
+      const solicitante = r.solicitante_nome || r.nome || '';
+      const solicitanteLabel = solicitante ? `<span style="font-weight:600;margin-right:8px">${solicitante}</span> - ` : '';
+      const left = `${solicitanteLabel}<b>${r.tipo_ocorrencia.replace('_',' ')}</b> - ${r.data_evento} - ${statusText}`;
       let actions = '';
-      if (isOwner) actions += `<button data-id=\"${r.id}\" class=\"delbtn\" style=\"background:#ef4444;margin-left:8px\">Apagar</button>`;
-      // botão Deferir somente visível na aba da equipe e para perfis RH/GESTOR — front-end só monta quando aplicável
-      if (!isOwner && (currentUser && (currentUser.perfil === 'RH' || currentUser.perfil === 'GESTOR'))){
-        actions += `<button data-id=\"${r.id}\" class=\"deferbtn\" style=\"background:#10b981;margin-left:8px\">Deferir</button>`;
+      if (isOwner) actions += `<button data-id="${r.id}" class="delbtn" style="background:#ef4444;margin-left:8px">Apagar</button>`;
+      // botão Deferir visível para perfis RH/GESTOR, inclusive para autodeferimento
+      if (currentUser && (currentUser.perfil === 'RH' || currentUser.perfil === 'GESTOR')){
+        actions += `<button data-id="${r.id}" class="deferbtn" style="background:#10b981;margin-left:8px">Deferir</button>`;
       }
       // Se for atestado médico, adicionar botões de visualização e aprovação apenas para RH
       if (r.tipo_ocorrencia === 'ATESTADO_MEDICO' && currentUser && currentUser.perfil === 'RH'){
-        actions += `<button data-id=\"${r.id}\" class=\"download-atestado\" style=\"background:#2563eb;margin-left:8px\">Visualizar Anexo</button>`;
-        actions += `<button data-id=\"${r.id}\" class=\"aprovar-atestado\" style=\"background:#2563eb;margin-left:8px\">Aprovar Atestado</button>`;
+        actions += `<button data-id="${r.id}" class="download-atestado" style="background:#2563eb;margin-left:8px">Visualizar Anexo</button>`;
+        actions += `<button data-id="${r.id}" class="aprovar-atestado" style="background:#2563eb;margin-left:8px">Aprovar Atestado</button>`;
       }
-      div.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center\"><div>${left}</div><div>${actions}</div></div><div style=\"font-size:13px;color:#444\">Horários: ${r.horario_proposto||'-'}</div><div style=\"margin-top:6px;color:#333\">${r.descricao ? r.descricao : ''}</div><div style=\"margin-top:6px;color:#333\">${r.justificativa_recusa ? 'Justificativa de recusa: '+r.justificativa_recusa : ''}</div>`;
+      div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div>${left}</div><div>${actions}</div></div><div style="font-size:13px;color:#444">Horários: ${r.horario_proposto||'-'}</div><div style="margin-top:6px;color:#333">${r.descricao ? r.descricao : ''}</div><div style="margin-top:6px;color:#333">${r.justificativa_recusa ? 'Justificativa de recusa: '+r.justificativa_recusa : ''}</div>`;
       return div;
     }
 
@@ -432,5 +442,8 @@
 
     show('loginSection');
   </script>
+  <footer class="site-footer">
+    <div class="container">© 2026. JustPonto. Todos os direitos reservados.</div>
+  </footer>
 </body>
 </html>
